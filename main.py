@@ -1,7 +1,7 @@
 from time import sleep
 from seleniumwire import webdriver
 from selenium.webdriver.chrome.options import Options
-import os, pickle
+import os
 from selenium.webdriver.common.action_chains import ActionChains 
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -42,13 +42,18 @@ def getFollowerByUserName(username):
     followerlist.click() #open follower list
     element_present = EC.presence_of_element_located((By.XPATH, '//div/ul/div/li'))
     WebDriverWait(browser, 2).until(element_present)
-
-    while 1: #has next -> to implement
+    diz={}
+    i=5
+    while i>0: #has next -> to implement
+        for request in browser.requests:
+            if request.response and "https://www.instagram.com/graphql/query/?query_hash=" in request.url:
+                diz[request.url]=request.response
         action = ActionChains(browser) 
-
-
         scrolla= browser.find_elements_by_xpath('//div/ul/div/li')
         action.move_to_element(scrolla[-1]).perform()
+        i-=1
+    print(diz)
+
 
 
 """
@@ -57,7 +62,7 @@ for request in browser.requests:
         print(
             request.url,
             request.response.status_code,
-            request.response.headers['Content-Type']
+            request.response
         )
 """
 if __name__ == '__main__':
@@ -67,7 +72,7 @@ if __name__ == '__main__':
     browser.implicitly_wait(5)
 
     #init() # min 1 sec to ~8 sec
-    getFollowerByUserName("simone_mastella")
+    getFollowerByUserName("octateam")
     input()
     browser.close()
 
