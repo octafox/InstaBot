@@ -6,6 +6,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+import json 
 
 def cookie(): #accept cookie
     global browser  
@@ -38,25 +39,32 @@ def init():
 
 def getFollowerByUserName(username):
     browser.get('https://www.instagram.com/'+username+'/')
+    del browser.requests
     followerlist = browser.find_element_by_partial_link_text(' follower')
     followerlist.click() #open follower list
     element_present = EC.presence_of_element_located((By.XPATH, '//div/ul/div/li'))
     WebDriverWait(browser, 2).until(element_present)
-    diz={}
-    i=5
-    while i>0: #has next -> to implement
-        for request in browser.requests:
-            if request.response and "https://www.instagram.com/graphql/query/?query_hash=" in request.url:
-                diz[request.url]=request.response
-        action = ActionChains(browser) 
-        scrolla= browser.find_elements_by_xpath('//div/ul/div/li')
-        action.move_to_element(scrolla[-1]).perform()
-        i-=1
-    print(diz)
+    
+
+    for request in browser.requests:
+        if request.response and "https://www.instagram.com/graphql/query/?query_hash=" in request.url:
+            print(request.response.body)
+            data=json.loads(request.response.body.decode('utf-8'))
+            with open('data.json', 'w') as f:
+                f.write(json.dumps(data, indent=4))
+
+
+"""            
+    action = ActionChains(browser) 
+    scrolla= browser.find_elements_by_xpath('//div/ul/div/li')
+    action.move_to_element(scrolla[-1]).perform()
+        
+
+    #print(diz)
 
 
 
-"""
+
 for request in browser.requests:
     if request.response:
         print(
