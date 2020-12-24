@@ -2,7 +2,9 @@ selenium/
 config.py
 *.exe
 *.json 
-
+venv/
+chromedriver.exe
+.idea/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
