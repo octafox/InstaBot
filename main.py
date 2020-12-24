@@ -1,11 +1,8 @@
 from time import sleep
-from seleniumwire import webdriver
+from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import os
-from selenium.webdriver.common.action_chains import ActionChains 
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
+import link
 import json 
 
 def cookie(): #accept cookie
@@ -38,49 +35,39 @@ def init():
 
 
 def getFollowerByUserName(username):
-    browser.get('https://www.instagram.com/'+username+'/')
-    del browser.requests
-    followerlist = browser.find_element_by_partial_link_text(' follower')
-    followerlist.click() #open follower list
-    element_present = EC.presence_of_element_located((By.XPATH, '//div/ul/div/li'))
-    WebDriverWait(browser, 2).until(element_present)
-    
+    browser.get(link.getProfile(username))
+    pre = browser.find_element_by_tag_name("pre").text
+    data = json.loads(pre)
+    id=data['graphql']['user']['id']
 
-    for request in browser.requests:
-        if request.response and "https://www.instagram.com/graphql/query/?query_hash=" in request.url:
-            print(request.response.body)
-            data=json.loads(request.response.body.decode('utf-8'))
-            with open('data.json', 'w') as f:
-                f.write(json.dumps(data, indent=4))
+    browser.get(link.getFollower(id=id))
 
+    pre = browser.find_element_by_tag_name("pre").text
+    data = json.loads(pre)
 
-"""            
-    action = ActionChains(browser) 
-    scrolla= browser.find_elements_by_xpath('//div/ul/div/li')
-    action.move_to_element(scrolla[-1]).perform()
+    hasnext = data['data']['user']['edge_followed_by']['page_info']['has_next_page']
+    id_after = data['data']['user']['edge_followed_by']['page_info']['end_cursor']
+
+    while hasnext:
         
+        browser.get(link.getFollower(id=id, after=id_after))
+        pre = browser.find_element_by_tag_name("pre").text
+        data = json.loads(pre)
+        hasnext = data['data']['user']['edge_followed_by']['page_info']['has_next_page']
+        id_after = data['data']['user']['edge_followed_by']['page_info']['end_cursor']
 
-    #print(diz)
 
 
 
 
-for request in browser.requests:
-    if request.response:
-        print(
-            request.url,
-            request.response.status_code,
-            request.response
-        )
-"""
 if __name__ == '__main__':
     chrome_options = Options()
     chrome_options.add_argument("user-data-dir=selenium")
     browser = webdriver.Chrome(options=chrome_options)
     browser.implicitly_wait(5)
 
-    #init() # min 1 sec to ~8 sec
-    getFollowerByUserName("octateam")
+    #init() # > 1 sec < 8 sec
+    getFollowerByUserName("simone_mastella")
     input()
     browser.close()
 

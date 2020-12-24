@@ -1,7 +1,7 @@
 selenium/
 config.py
 *.exe
-
+*.json 
 
 
 # Byte-compiled / optimized / DLL files
