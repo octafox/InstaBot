@@ -61,7 +61,7 @@ if __name__ == '__main__':
     browser = webdriver.Chrome(options=chrome_options)
     browser.implicitly_wait(5)
 
-    # init() # > 1 sec < 8 sec
+    init() # > 1 sec < 8 sec
     getFollowerByUserName("simone_mastella")
     input()
     browser.close()
