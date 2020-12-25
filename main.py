@@ -6,6 +6,7 @@ import link
 import json
 import os
 import pandas as pd
+from utils.utils import parseObj, parseProfiles
 
 statsDirPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),"stats") #cartella dove salvo i dataframe
 maxProfile=1000 #n/50 = m requests to find all the profile
@@ -15,29 +16,6 @@ follow_list = pd.read_parquet(os.path.join(statsDirPath,"follow")) # il datafram
 added_list = pd.read_parquet(os.path.join(statsDirPath,"added")) 
 stopped_list = pd.read_parquet(os.path.join(statsDirPath,"stopped"))
 
-def jsonToDfProfiling(jfile): #https://www.instagram.com/octateam/?__a=1
-    iid = jfile['graphql']['user']['id']
-    username = jfile['graphql']['user']['username']
-    fullname = jfile['graphql']['user']['full_name']
-    new_row = {'iid':iid,'username':username,'fullname':fullname}
-    return new_row #prendo i dati che mi interessano dal json e li metto in una riga pronta per essere inserita nel stats/PROFILE
-
-def jsonToDfFollower(jfile, folloewd_id): #https://www.instagram.com/graphql/query/?query_hash=c76146de99bb02f6415203be841dd25a&variables=%7B"id"%3A"1488187679"%2C"include_reel"%3Atrue%2C"fetch_mutual"%3Afalse%2C"first"%3A80%2C"after"%3A"QVFERmY3djBxOUo0Q3V3OFNKSHlERXI1SXBRa2NVLXYzRGJIUmlEenhEQnZvQVlCanRhaGp0TUd3ZEdSdmNKSnYxb0FaMXdyQWJBVzRUUkJiT09yU1ctdg%3D%3D"%7D
-    global profile_list
-    global follow_list
-    # se mi trovo qui allora asserisco che le informazioni riguardanti al mittente allora
-    for profile in jfile['data']['user']['edge_followed_by']['edges']:
-        iid=profile['node']['id']
-        username=profile['node']['username']
-        fullname=profile['node']['full_name']
-        #inserisco gli id del follower e del followed per collegarli in una relazione N a N 
-
-        follow_row= {'iid_followed':folloewd_id,'iid_following':iid}
-        addToFollowList(follow_row)
-
-        #aggiungo le informazioni della persona nella lista dei profili
-        new_row = {'iid':iid,'username':username,'fullname':fullname}
-        profile_list = profile_list.append(new_row, ignore_index=True)
 
 def cookie():  # accept cookie
     global browser
@@ -65,6 +43,20 @@ def init():
     browser.implicitly_wait(5) 
     #semplicemente vado nella home di instagram e se ci sono i campi accetto i cookie e poi login, meglio non eseguire perche` spendi tempo nel cercare gli elementi
 
+def jsonToDfFollower(jfile, folloewd_id): #https://www.instagram.com/graphql/query/?query_hash=c76146de99bb02f6415203be841dd25a&variables=%7B"id"%3A"1488187679"%2C"include_reel"%3Atrue%2C"fetch_mutual"%3Afalse%2C"first"%3A80%2C"after"%3A"QVFERmY3djBxOUo0Q3V3OFNKSHlERXI1SXBRa2NVLXYzRGJIUmlEenhEQnZvQVlCanRhaGp0TUd3ZEdSdmNKSnYxb0FaMXdyQWJBVzRUUkJiT09yU1ctdg%3D%3D"%7D
+    global profile_list
+    global follow_list
+    # se mi trovo qui allora asserisco che le informazioni riguardanti al mittente allora
+    for profile in jfile['data']['user']['edge_followed_by']['edges']:
+        user = parseObj(profile['node'],['id','username','full_name'])
+
+        #inserisco gli id del follower e del followed per collegarli in una relazione N a N 
+        follow_row = {'iid_followed':folloewd_id,'iid_following':user['id']}
+        addToFollowList(follow_row)
+
+        #aggiungo le informazioni della persona nella lista dei profili
+        profile_list = profile_list.append(user, ignore_index=True)
+
 def addToFollowList(row):
     global follow_list
     global added_list
@@ -83,15 +75,15 @@ def getIidByUserName(username):
         data = json.loads(pre) #parso il json
         if not data: #se e` True allora username probabilmente non esiste
             return "An error occurred"
-        ris=jsonToDfProfiling(data) #il metodo mi restituisce una riga con le informazioni che voglio
+        ris = parseProfiles(data) #il metodo mi restituisce una riga con le informazioni che voglio
         profile_list=profile_list.append(ris, ignore_index=True) # aggiungo la riga senza tenere conto dell` indice
-        return ris["iid"] #instagram id, follower=seguito da N, following=segue N 
+        return ris["id"] #instagram id, follower=seguito da N, following=segue N 
 
     else:    #altrimenti cerca le info e le salva
         res = profile_list[profile_list['username'] == username] #se username e` gia` presente in df allora anche iid e altre info
-        return res.iloc[0]['iid']  #prendo tutto dalla riga e lo returno
+        return res.iloc[0]['id']  #prendo tutto dalla riga e lo returno
 
-def getFollowerByUserName(username): 
+def getFollowerByUserName(username): # getFollowerByUserName("octateam") -> {...}
     iid=getIidByUserName(username) #iid = instagram id, (Il profilo e` seguito da tot persone), (il profilo segue tot presone)
     if "An error occurred" in iid: #se ho un errore che mi deriva dal caricamento della pagina ritorno una stringa di errore
         return "An error occurred"
@@ -124,9 +116,13 @@ if __name__ == '__main__':
     chrome_options.add_argument("user-data-dir=selenium")
     browser = webdriver.Chrome(options=chrome_options)
     browser.implicitly_wait(5)
-    
+    getFollowerByUserName("simone_mastella")
+
+
+
+
     try:
-        getFollowerByUserName("simone_mastella")
+        pass
     except:
         print("Errore")
     finally:
@@ -140,3 +136,22 @@ if __name__ == '__main__':
         profile_list.to_parquet(os.path.join(statsDirPath,"profile"), index=False)
     #init() # > 1 sec < 8 sec
     browser.close()
+
+
+
+    # profile_list
+
+    # userData = getUserData("simone_mastella") # -> ['id','username','full_name']
+    # addUserToDF(userData['username']) # controlla se user esiste, se si non fa niente, se no lo aggiunge
+    # userFollowerJson = getFollowerByUserName(userData['username']) # [id,username,full_name,profile_pic_url,is_private,is_verified,followed_by_viewer,requested_by_viewer,reel]
+    # userFollowerParsed = parseFollers(userFollowerJson) # [id,username,full_name]
+
+    # for follower in userFollowerParsed:
+    #     saveInDF('followers',follower)
+    #     saveInSql('followers',follower)
+    #     saveInCSV('followers',follower)
+
+    # for follower in userFollowerParsed:
+    #     data = {'iid_followed':follower['id'],'iid_following':user['id']}
+    #     saveInDF('added',data)
+    #     saveInCSV('added',data)
