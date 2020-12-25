@@ -5,7 +5,7 @@ config.py
 venv/
 chromedriver.exe
 .idea/
-
+stats/*
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
