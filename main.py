@@ -1,4 +1,5 @@
 from time import sleep
+from datetime import datetime
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import link
@@ -9,25 +10,34 @@ import pandas as pd
 statsDirPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),"stats") #cartella dove salvo i dataframe
 maxProfile=1000 #n/50 = m requests to find all the profile
 profile_list = pd.read_parquet(os.path.join(statsDirPath,"profile")) # il dataframe e` profile list e viene preso dal file stats/profile
+follow_list = pd.read_parquet(os.path.join(statsDirPath,"follow")) # il dataframe e` follow list e viene preso dal file stats/follow_list
 
-def jsonToDfProfiling(jfile):
+added_list = pd.read_parquet(os.path.join(statsDirPath,"added")) 
+stopped_list = pd.read_parquet(os.path.join(statsDirPath,"stopped"))
+
+def jsonToDfProfiling(jfile): #https://www.instagram.com/octateam/?__a=1
     iid = jfile['graphql']['user']['id']
     username = jfile['graphql']['user']['username']
     fullname = jfile['graphql']['user']['full_name']
     new_row = {'iid':iid,'username':username,'fullname':fullname}
     return new_row #prendo i dati che mi interessano dal json e li metto in una riga pronta per essere inserita nel stats/PROFILE
 
-def jsonToDfFollower(jfile, folloewd_id):
+def jsonToDfFollower(jfile, folloewd_id): #https://www.instagram.com/graphql/query/?query_hash=c76146de99bb02f6415203be841dd25a&variables=%7B"id"%3A"1488187679"%2C"include_reel"%3Atrue%2C"fetch_mutual"%3Afalse%2C"first"%3A80%2C"after"%3A"QVFERmY3djBxOUo0Q3V3OFNKSHlERXI1SXBRa2NVLXYzRGJIUmlEenhEQnZvQVlCanRhaGp0TUd3ZEdSdmNKSnYxb0FaMXdyQWJBVzRUUkJiT09yU1ctdg%3D%3D"%7D
     global profile_list
+    global follow_list
     # se mi trovo qui allora asserisco che le informazioni riguardanti al mittente allora
     for profile in jfile['data']['user']['edge_followed_by']['edges']:
-        
         iid=profile['node']['id']
         username=profile['node']['username']
         fullname=profile['node']['full_name']
+        #inserisco gli id del follower e del followed per collegarli in una relazione N a N 
+
+        follow_row= {'iid_followed':folloewd_id,'iid_following':iid}
+        addToFollowList(follow_row)
+
+        #aggiungo le informazioni della persona nella lista dei profili
         new_row = {'iid':iid,'username':username,'fullname':fullname}
-        profile_list=profile_list.append(new_row, ignore_index=True)
-    return 0
+        profile_list = profile_list.append(new_row, ignore_index=True)
 
 def cookie():  # accept cookie
     global browser
@@ -55,6 +65,14 @@ def init():
     browser.implicitly_wait(5) 
     #semplicemente vado nella home di instagram e se ci sono i campi accetto i cookie e poi login, meglio non eseguire perche` spendi tempo nel cercare gli elementi
 
+def addToFollowList(row):
+    global follow_list
+    global added_list
+    #row= iid_followed, iid_following
+    if follow_list[(follow_list['iid_followed']==row['iid_followed']) & (follow_list['iid_following']==row['iid_following'])].empty:
+        follow_list = follow_list.append(row, ignore_index=True)
+        added_list = added_list.append({'iid_followed':row['iid_followed'],'iid_following':row['iid_following'],'date':str(datetime.now())},ignore_index=True)
+
 def getIidByUserName(username):
     #apro il df e cerco se esiste gia` iid corrispondente a username, altrimenti lo cerco e lo inserisco per il futuro
     global profile_list
@@ -72,8 +90,6 @@ def getIidByUserName(username):
     else:    #altrimenti cerca le info e le salva
         res = profile_list[profile_list['username'] == username] #se username e` gia` presente in df allora anche iid e altre info
         return res.iloc[0]['iid']  #prendo tutto dalla riga e lo returno
- 
-
 
 def getFollowerByUserName(username): 
     iid=getIidByUserName(username) #iid = instagram id, (Il profilo e` seguito da tot persone), (il profilo segue tot presone)
@@ -103,22 +119,24 @@ def getFollowerByUserName(username):
 
     #TODO if len(df)==0: return "profilo privato"
 
-    
-    
-    
-
 if __name__ == '__main__':
     chrome_options = Options()
     chrome_options.add_argument("user-data-dir=selenium")
     browser = webdriver.Chrome(options=chrome_options)
     browser.implicitly_wait(5)
     
-    getFollowerByUserName("simone_mastella")
     try:
-        pass
+        getFollowerByUserName("simone_mastella")
     except:
         print("Errore")
     finally:
+        #follow_list = follow_list.drop_duplicates(ignore_index=True)
+        follow_list.to_parquet(os.path.join(statsDirPath,"follow"), index=False)
+
+        added_list.to_parquet(os.path.join(statsDirPath,"added"), index=False)
+        stopped_list.to_parquet(os.path.join(statsDirPath,"stopped"), index=False)
+
+        profile_list = profile_list.drop_duplicates(ignore_index=True)
         profile_list.to_parquet(os.path.join(statsDirPath,"profile"), index=False)
     #init() # > 1 sec < 8 sec
     browser.close()
