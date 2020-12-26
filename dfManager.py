@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+from datetime import datetime
 
 statsDirPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),"stats") #cartella dove salvo i dataframe
 
@@ -7,6 +8,33 @@ def dfUpdate(dfName, dictArray):
     for obj in dictArray:
         dfName = dfName.append(obj,ignore_index=True)
     return dfName
+
+def dfUpdateAll(profile_list, follow_list, added_list, stopped_list, dictArray, user_id, target='follower'):
+    profile_list = dfUpdate(profile_list,dictArray) # {id, username, full_name}
+    if target=='follower':
+        followerList = map(lambda follower: {'iid_followed':user_id, 'iid_following':follower['id']}, dictArray) # {'iid_followed','iid_following'}
+        prev_follow = follow_list[follow_list['iid_followed']==user_id]
+    elif target=='following':
+        followerList = map(lambda follower: {'iid_followed':follower['id'], 'iid_following':user_id}, dictArray) # {'iid_followed','iid_following'}
+        prev_follow = follow_list[follow_list['iid_following']==user_id]
+    else:
+        return profile_list, follow_list, added_list, stopped_list
+
+    now_follow= pd.DataFrame(columns=['iid_followed','iid_following'])
+    now_follow= dfUpdate(now_follow, list(followerList))
+    
+    new_stoped = pd.merge(prev_follow,now_follow, how = 'left' ,indicator=True).loc[lambda x : x['_merge']=='left_only']
+    new_added = pd.merge(prev_follow,now_follow, how = 'right' ,indicator=True).loc[lambda x : x['_merge']=='right_only']
+    new_added.drop('_merge', inplace=True, axis=1)
+    new_stoped.drop('_merge', inplace=True, axis=1)
+    follow_list = follow_list.append(new_added,ignore_index=True)
+    follow_list = follow_list.append(new_stoped,ignore_index=True).drop_duplicates(keep=False)
+    new_added['date']=str(datetime.now())
+    new_stoped['date']=str(datetime.now())
+    added_list=added_list.append(new_added,ignore_index=True)
+    stopped_list=stopped_list.append(new_stoped,ignore_index=True)
+    return profile_list, follow_list, added_list, stopped_list
+
 
 def dfLoad():
     profile_list = pd.read_parquet(os.path.join(statsDirPath,"profile"))
@@ -22,10 +50,10 @@ def dfSave(profile_list, follow_list, added_list, stopped_list):
     follow_list = follow_list.drop_duplicates(ignore_index=True)
     follow_list.to_parquet(os.path.join(statsDirPath,"follow"), index=False)
 
-    added_list = added_list.drop_duplicates(subset=['iid_followed','iid_following'],keep='first',ignore_index=True)
+    added_list = added_list.drop_duplicates(subset=['iid_followed','iid_following'],keep='last',ignore_index=True) #keep first or last? idk 
     added_list.to_parquet(os.path.join(statsDirPath,"added"), index=False)
 
-    #stopped_list.to_parquet(os.path.join(statsDirPath,"stopped"), index=False)
+    stopped_list.to_parquet(os.path.join(statsDirPath,"stopped"), index=False)
 
 def dfReset():
     added = pd.DataFrame(columns=['iid_followed','iid_following','date'])
@@ -44,7 +72,7 @@ def dfPrint():
     profile = pd.read_parquet("stats/profile")
     follow = pd.read_parquet("stats/follow")
     added = pd.read_parquet("stats/added")
-    # stopped = pd.read_parquet("stats/stopped")
+    stopped = pd.read_parquet("stats/stopped")
 
     print('------------PROFILE--------------')
     print(profile)
@@ -52,6 +80,6 @@ def dfPrint():
     print(follow)
     print('------------ADDED--------------')
     print(added)
-    # print('------------STOPPED--------------')
-    # print(stopped)
+    print('------------STOPPED--------------')
+    print(stopped)
     print('--------------------------')
