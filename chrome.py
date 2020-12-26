@@ -32,13 +32,14 @@ def fetchJsonData(browser, url):
     jsonData = json.loads(pre)
     return jsonData
 
-def start(username,password):
+def start(username,password,forceLogin=False):
     chrome_options = Options()
     chrome_options.add_argument("user-data-dir=selenium")
     browser = webdriver.Chrome(options=chrome_options)
     browser.implicitly_wait(5)
 
-    #init(browser,username,password)
+    if forceLogin:
+        init(browser,username,password)
 
     return browser
 
