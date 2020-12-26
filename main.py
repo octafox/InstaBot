@@ -63,7 +63,7 @@ if __name__ == '__main__':
     profile_list, follow_list, added_list, stopped_list = dfLoad()
     
     username = 'octateam'
-    dfPrint()
+    
     if profile_list[profile_list['username'] == username].empty:
         print('create')
         user = getUserData(username)
@@ -79,39 +79,9 @@ if __name__ == '__main__':
     
     followers = getUserFollower(user['id'])
     profile_list, follow_list, added_list, stopped_list = dfUpdateAll(profile_list, follow_list, added_list, stopped_list, followers, user['id'], target='follower')
-    """profile_list = dfUpdate(profile_list,followers) # {id, username, full_name}
-    followerList = map(lambda follower: {'iid_followed':user['id'], 'iid_following':follower['id']}, followers) # {'iid_followed','iid_following'}
-
-    now_follow= pd.DataFrame(columns=['iid_followed','iid_following'])
-    now_follow= dfUpdate(now_follow, list(followerList))
-    prev_follow = follow_list[follow_list.iid_followed==user['id']]
-    new_stoped = pd.merge(prev_follow,now_follow, how = 'left' ,indicator=True).loc[lambda x : x['_merge']=='left_only']
-    new_added = pd.merge(prev_follow,now_follow, how = 'right' ,indicator=True).loc[lambda x : x['_merge']=='right_only']
-    new_added.drop('_merge', inplace=True, axis=1)
-    new_stoped.drop('_merge', inplace=True, axis=1)
-    
-    follow_list = follow_list.append(new_added,ignore_index=True)
-
-    follow_list = follow_list.append(new_stoped,ignore_index=True).drop_duplicates(keep=False)
-
-    new_added['date']=str(datetime.now())
-    new_stoped['date']=str(datetime.now())
-    added_list=added_list.append(new_added,ignore_index=True)
-    stopped_list=stopped_list.append(new_stoped,ignore_index=True)"""
-
-
-
-
-    #followings = getUserFollowing(user['id'])
-    #profile_list = dfUpdate(profile_list,followings) # {id, username, full_name}
-    #followingList= map(lambda follower: {'iid_followed':follower['id'], 'iid_following':user['id']}, followings) # {'iid_followed','iid_following'}
-
-
 
 
     dfSave(profile_list, follow_list, added_list, stopped_list)
     dfPrint()
-
-    
     browser.close()
    
