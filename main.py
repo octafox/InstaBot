@@ -62,7 +62,7 @@ if __name__ == '__main__':
     #dfReset()
     profile_list, follow_list, added_list, stopped_list = dfLoad()
     
-    username = 'octateam'
+    username = 'kaj_oskar'
     
     if profile_list[profile_list['username'] == username].empty:
         print('create')
