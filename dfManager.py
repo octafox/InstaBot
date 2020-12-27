@@ -83,3 +83,21 @@ def dfPrint():
     print('------------STOPPED--------------')
     print(stopped)
     print('--------------------------')
+
+def dfGetProfileByUsername(profile_list, username):
+    return profile_list[profile_list['username'] == username].iloc[0].to_dict()
+
+def dfGetProfileByID(profile_list, id):
+    return profile_list[profile_list['id'] == id].iloc[0].to_dict()
+
+def dfGetFollowerByUsername(profile_list,follow_list, username):
+    ids=profile_list[profile_list['username'] ==username ].iloc[0]["id"]
+    now_follow = follow_list[follow_list['iid_followed']==ids]
+    now_follow=now_follow.replace(ids,profile_list[profile_list['username'] ==username].iloc[0]["username"])
+    return pd.merge(left=now_follow, right=profile_list, left_on=['iid_following'], right_on=['id'], how='inner').drop(['id','full_name','iid_following'],axis=1).rename(columns={'username':'username_following','iid_followed':'username_followed'})
+
+def dfGetFollowingByUsername(profile_list,follow_list, username):
+    ids=profile_list[profile_list['username'] ==username ].iloc[0]["id"]
+    now_follow = follow_list[follow_list['iid_following']==ids]
+    now_follow=now_follow.replace(ids,profile_list[profile_list['username'] ==username].iloc[0]["username"])
+    return pd.merge(left=now_follow, right=profile_list, left_on=['iid_followed'], right_on=['id'], how='inner').drop(['id','full_name','iid_followed'],axis=1).rename(columns={'username':'username_followed','iid_following':'username_following'})

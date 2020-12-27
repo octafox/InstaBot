@@ -1,19 +1,20 @@
 from linkBuilder import getProfileLink, getFollowerLink,getFollowingLink
 from utils import parseObj
-from dfManager import dfUpdate, dfLoad, dfSave, dfReset, dfPrint, dfUpdateAll
+from dfManager import dfUpdate, dfLoad, dfSave, dfReset, dfPrint, dfUpdateAll, dfGetProfileByUsername, dfGetProfileByID
 from chrome import start, fetchJsonData
 import config as cfg
+from datetime import datetime
 
-
+startTime=datetime.now()
 maxProfile=1000 #n/50 = m requests to find all the profile
 browser = None
 
-def getUserData(username):
+def fetchUserData(username):
     jsonData = fetchJsonData(browser,getProfileLink(username))
     userJson = parseObj(jsonData['graphql']['user'],['id','username','full_name'])
     return userJson
 
-def getUserFollower(id):
+def fetchUserFollower(id):
     nextPage = True
     afterId = None
     followers = []
@@ -29,11 +30,11 @@ def getUserFollower(id):
             followers.append(parsedFollower)
         afterId = id_after
         nextPage = hasnext
-    if follower_number < maxProfile == 0:
+    if follower_number > maxProfile:
         print('Errore: Troppi follower')
     return followers
 
-def getUserFollowing(id):
+def fetchUserFollowing(id):
     nextPage = True
     afterId = None
     followings = []
@@ -49,7 +50,7 @@ def getUserFollowing(id):
             followings.append(parsedFollowing)
         afterId = id_after
         nextPage = hasnext
-    if following_number < maxProfile == 0:
+    if following_number > maxProfile:
         print('Errore: Troppi following')
     return followings
 
@@ -58,29 +59,29 @@ def getUserFollowing(id):
 
 if __name__ == '__main__':
     browser = start(cfg.INSTA_USER,cfg.INSTA_PASS)
-
+    
     #dfReset()
     profile_list, follow_list, added_list, stopped_list = dfLoad()
     
-    username = 'kaj_oskar'
+    username = 'simone_mastella'
+    #print(dfGetProfileByID(profile_list,'44999765028'))
     
     if profile_list[profile_list['username'] == username].empty:
         print('create')
-        user = getUserData(username)
+        user = fetchUserData(username)
         profile_list = dfUpdate(profile_list,[user])
     else:
         print('load')
-        user = profile_list[profile_list['username'] == username].iloc[0].to_dict()
+        user=dfGetProfileByUsername(profile_list, username)
     
-    # update DataFrames
-    followers = getUserFollowing(user['id'])
+    followers = fetchUserFollowing(user['id'])
     profile_list, follow_list, added_list, stopped_list = dfUpdateAll(profile_list, follow_list, added_list, stopped_list, followers, user['id'], target='following')
     
     
-    followers = getUserFollower(user['id'])
+    followers = fetchUserFollower(user['id'])
     profile_list, follow_list, added_list, stopped_list = dfUpdateAll(profile_list, follow_list, added_list, stopped_list, followers, user['id'], target='follower')
 
-
+    
     dfSave(profile_list, follow_list, added_list, stopped_list)
     dfPrint()
     browser.close()
