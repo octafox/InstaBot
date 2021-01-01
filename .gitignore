@@ -1,4 +1,4 @@
-selenium/
+sess_*/
 config.py
 *.exe
 *.json 

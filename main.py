@@ -1,10 +1,13 @@
 from linkBuilder import getProfileLink, getFollowerLink,getFollowingLink
 from utils import parseObj
-from dfManager import dfUpdate, dfLoad, dfSave, dfReset, dfPrint, dfUpdateAll, dfGetProfileByUsername, dfGetProfileByID
+from dfManager import dfUpdate, dfLoad, dfSave, dfReset, dfPrint, dfUpdateAll, dfGetProfileByUsername, dfGetProfileByID,dfGetFollowersUsername,dfGetFollowingsUsername
 from chrome import start, fetchJsonData
-import config as cfg
+from time import sleep
 from datetime import datetime
+from selenium.webdriver.common.action_chains import ActionChains
+import json
 
+import config as cfg
 startTime=datetime.now()
 maxProfile=1000 #n/50 = m requests to find all the profile
 browser = None
@@ -54,7 +57,59 @@ def fetchUserFollowing(id):
         print('Errore: Troppi following')
     return followings
 
+def fetchUserStories(username):
+    browser.get("https://www.instagram.com/"+username)
+    storie=browser.find_element_by_xpath('//header/div/div/span/img')
+    storie.click()
+    sleep(1)
+    visualAllIGS={}
+    while browser.current_url != "https://www.instagram.com/"+username+"/":
+        del browser.requests
+        visual=browser.find_element_by_xpath('//body/div/section/div/div/section/div/div/div/button')
+        numerovisual= int(visual.find_element_by_xpath('div/span/span').text)
+        visual.click()
+        sleep(1)
+        elemVisual=[]
+        while len(elemVisual)<numerovisual:
+            action = ActionChains(browser) 
+            scrolla= browser.find_elements_by_xpath('//div[@role="dialog"]/div/div/div/div/div/div')
+            for visualizzatore in scrolla:
+                link= visualizzatore.find_element_by_xpath('div/a').get_attribute("href").replace("https://www.instagram.com/","")[:-1]
+                if not link in elemVisual:
+                    elemVisual.append(link)
+            action.move_to_element(scrolla[-1]).perform()
+        visualizzatori=[]
+        for request in browser.requests:
+            if request.method == "GET" and "?include_blacklist_sample=true&max_id=" in request.url:
+                data = json.loads(request.response.body.decode("utf8"))
+                for user in data['users']:
+                    visualizzatori.append(parseObj(user,['pk','username','full_name']))
+            elif request.method == "GET" and "?include_blacklist_sample=true" in request.url:
+                data = json.loads(request.response.body.decode("utf8"))
+                owner = data['updated_media']['user']['pk']
+                upload_time = data['updated_media']['taken_at']
+                for user in data['users']:
+                    visualizzatori.append(parseObj(user,['pk','username','full_name']))
+        visualAllIGS[upload_time]=(visualizzatori)
+        close=browser.find_element_by_xpath('//body/div/div/div/div/div/div/div/button')
+        close.click()
+        nextPage=browser.find_element_by_xpath('//div[@class="coreSpriteRightChevron"]')
+        nextPage.click()
+    return owner, visualAllIGS
 
+
+def checkIfUsernameExist(profile_list, username):
+    if profile_list[profile_list['username'] == username].empty:
+        print('create')
+        user = fetchUserData(username)
+        profile_list = dfUpdate(profile_list,[user])
+    else:
+        print('load')
+        user=dfGetProfileByUsername(profile_list, username)
+    return profile_list, user
+
+def checkIfUsernameHasNews(follow_list, profile_list, date):
+    return 0
 
 
 if __name__ == '__main__':
@@ -65,22 +120,23 @@ if __name__ == '__main__':
     
     username = 'simone_mastella'
     #print(dfGetProfileByID(profile_list,'44999765028'))
+    profile_list, user=checkIfUsernameExist(profile_list,username)
     
-    if profile_list[profile_list['username'] == username].empty:
-        print('create')
-        user = fetchUserData(username)
-        profile_list = dfUpdate(profile_list,[user])
-    else:
-        print('load')
-        user=dfGetProfileByUsername(profile_list, username)
-    
-    followers = fetchUserFollowing(user['id'])
-    profile_list, follow_list, added_list, stopped_list = dfUpdateAll(profile_list, follow_list, added_list, stopped_list, followers, user['id'], target='following')
-    
-    
-    followers = fetchUserFollower(user['id'])
-    profile_list, follow_list, added_list, stopped_list = dfUpdateAll(profile_list, follow_list, added_list, stopped_list, followers, user['id'], target='follower')
+   
 
+    #restituisce un dataframe con la lista dei nomi  
+    #dfGetFollowingsUsername(profile_list,follow_list,user['username'])
+
+    #restituisce un dataframe con la lista dei nomi  
+    #dfGetFollowersUsername(profile_list,follow_list,user['username'])
+
+    #scrappa e aggiorna i following
+    #followers = fetchUserFollowing(user['id'])
+    #profile_list, follow_list, added_list, stopped_list = dfUpdateAll(profile_list, follow_list, added_list, stopped_list, followers, user['id'], target='following')
+
+    #scrappa e aggiorna i follower
+    #followers = fetchUserFollower(user['id'])
+    #profile_list, follow_list, added_list, stopped_list = dfUpdateAll(profile_list, follow_list, added_list, stopped_list, followers, user['id'], target='follower')
     
     dfSave(profile_list, follow_list, added_list, stopped_list)
     dfPrint()
