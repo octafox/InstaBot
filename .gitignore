@@ -6,6 +6,7 @@ venv/
 chromedriver.exe
 .idea/
 stats/*
+tgWS/*
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

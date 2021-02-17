@@ -33,10 +33,10 @@ def fetchJsonData(browser, url):
     return jsonData
     
 
-def start(username,password,forceLogin=False):
+def start(tg_id, username="",password="",forceLogin=False):
     chrome_options = Options()
-    chrome_options.add_argument("user-data-dir=sess_"+username)
-    browser = webdriver.Chrome(options=chrome_options)#
+    chrome_options.add_argument("user-data-dir=tgWS/"+tg_id+"/session")
+    browser = webdriver.Chrome(options=chrome_options) 
     browser.implicitly_wait(5)
 
     if forceLogin:

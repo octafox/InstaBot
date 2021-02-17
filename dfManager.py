@@ -2,7 +2,6 @@ import os
 import pandas as pd
 from datetime import datetime
 
-statsDirPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),"stats") #cartella dove salvo i dataframe
 
 def dfUpdate(dfName, dictArray):
     for obj in dictArray:
@@ -44,20 +43,25 @@ def dfUpdateStories(profile_list, stories_list, visualAllIGS, owner):
         stories_list=dfUpdate(stories_list, storyNew).drop_duplicates(ignore_index=True)    
     return profile_list, stories_list
 
-def dfLoad():
+def dfLoad(tgID):
+    statsDirPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),"tgWS/"+tgID+"/stats") #cartella dove salvo i dataframe
     profile_list = pd.read_parquet(os.path.join(statsDirPath,"profile"))
     follow_list = pd.read_parquet(os.path.join(statsDirPath,"follow"))
     added_list = pd.read_parquet(os.path.join(statsDirPath,"added")) 
     stopped_list = pd.read_parquet(os.path.join(statsDirPath,"stopped"))
     return (profile_list, follow_list, added_list, stopped_list)
 
-def dfSave(profile_list, follow_list, added_list, stopped_list):
+def dfSave(profile_list, follow_list, added_list, stopped_list,tgID):
+    statsDirPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),"tgWS/"+tgID+"/stats") #cartella dove salvo i dataframe
+
     profile_list.to_parquet(os.path.join(statsDirPath,"profile"), index=False)
     follow_list.to_parquet(os.path.join(statsDirPath,"follow"), index=False)
     added_list.to_parquet(os.path.join(statsDirPath,"added"), index=False)
     stopped_list.to_parquet(os.path.join(statsDirPath,"stopped"), index=False)
 
-def dfReset():
+def dfReset(tgID):
+    statsDirPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),"tgWS/"+tgID+"/stats") #cartella dove salvo i dataframe
+
     added = pd.DataFrame(columns=['iid_followed','iid_following','date'])
     added.to_parquet(os.path.join(statsDirPath,"added"),index=False)
 
@@ -70,11 +74,12 @@ def dfReset():
     profile=pd.DataFrame(columns=['id','username','full_name'])
     profile.to_parquet(os.path.join(statsDirPath,"profile"),index=False)
 
-def dfPrint():
-    profile = pd.read_parquet("stats/profile")
-    follow = pd.read_parquet("stats/follow")
-    added = pd.read_parquet("stats/added")
-    stopped = pd.read_parquet("stats/stopped")
+def dfPrint(tgID):
+    statsDirPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),"tgWS/"+tgID+"/stats")
+    profile = pd.read_parquet(os.path.join(statsDirPath,"profile"))
+    follow = pd.read_parquet(os.path.join(statsDirPath,"follow"))
+    added = pd.read_parquet(os.path.join(statsDirPath,"added")) 
+    stopped = pd.read_parquet(os.path.join(statsDirPath,"stopped"))
     print('------------PROFILE--------------')
     print(profile)
     print('------------FOLLOW--------------')

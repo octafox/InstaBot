@@ -8,7 +8,6 @@ from selenium.webdriver.common.action_chains import ActionChains
 import json
 import pandas as pd
 
-import config as cfg
 startTime=datetime.now()
 maxProfile=1000 #n/50 = m requests to find all the profile
 browser = None
@@ -106,38 +105,36 @@ def checkIfUsernameExist(profile_list, username):
         user=dfGetProfileByUsername(profile_list, username)
     return profile_list, user
 
-def checkIfUsernameHasNews(follow_list, profile_list, date):
-    return 0
 
 
-def getNewFollowers(username):
+def getNewFollowers(tgID, username):
     global browser
-    browser = start(cfg.INSTA_USER,cfg.INSTA_PASS)
-    profile_list, follow_list, added_list, stopped_list = dfLoad()
+    browser = start(tgID)
+    profile_list, follow_list, added_list, stopped_list = dfLoad(tgID)
     profile_list, user = checkIfUsernameExist(profile_list,username)
     followers = fetchUserFollower(user['id'])
     profile_list, follow_list, added_list, stopped_list = dfUpdateAll(profile_list, follow_list, added_list, stopped_list, followers, user['id'], target='follower')
     new_added=added_list[(pd.to_datetime(added_list.date)>startTime) & (added_list.iid_followed == user['id'])]
-    dfSave(profile_list, follow_list, added_list, stopped_list)
+    dfSave(profile_list, follow_list, added_list, stopped_list, tgID)
     browser.close()
     return new_added
 
-def getNewFollowings(username):
+def getNewFollowings(tgID, username):
     global browser
-    browser = start(cfg.INSTA_USER,cfg.INSTA_PASS)
-    profile_list, follow_list, added_list, stopped_list = dfLoad()
+    browser = start(tgID)
+    profile_list, follow_list, added_list, stopped_list = dfLoad(tgID)
     profile_list, user = checkIfUsernameExist(profile_list,username)
     followers = fetchUserFollowing(user['id'])
     profile_list, follow_list, added_list, stopped_list = dfUpdateAll(profile_list, follow_list, added_list, stopped_list, followers, user['id'], target='following')
     new_adding=added_list[(pd.to_datetime(added_list.date)>startTime) & (added_list.iid_following == user['id'])]
-    dfSave(profile_list, follow_list, added_list, stopped_list)
+    dfSave(profile_list, follow_list, added_list, stopped_list, tgID)
     browser.close()
     return new_adding
 
-def getNewFollowS(username):
+def getNewFollowS(tgID, username):
     global browser
-    browser = start(cfg.INSTA_USER,cfg.INSTA_PASS)
-    profile_list, follow_list, added_list, stopped_list = dfLoad()
+    browser = start(tgID)
+    profile_list, follow_list, added_list, stopped_list = dfLoad(tgID)
     profile_list, user = checkIfUsernameExist(profile_list,username)
 
     followers = fetchUserFollowing(user['id'])
@@ -148,14 +145,14 @@ def getNewFollowS(username):
     profile_list, follow_list, added_list, stopped_list = dfUpdateAll(profile_list, follow_list, added_list, stopped_list, followers, user['id'], target='follower')
     new_added=added_list[(pd.to_datetime(added_list.date)>startTime) & (added_list.iid_followed == user['id'])]
 
-    dfSave(profile_list, follow_list, added_list, stopped_list)
+    dfSave(profile_list, follow_list, added_list, stopped_list, tgID)
     browser.close()
     return new_adding, new_added
 
-def getALLFollowS(username):
+def getALLFollowS(tgID, username):
     global browser
-    browser = start(cfg.INSTA_USER,cfg.INSTA_PASS)
-    profile_list, follow_list, added_list, stopped_list = dfLoad()
+    browser = start(tgID)
+    profile_list, follow_list, added_list, stopped_list = dfLoad(tgID)
     profile_list, user = checkIfUsernameExist(profile_list,username)
 
     followers = fetchUserFollowing(user['id'])
@@ -166,15 +163,16 @@ def getALLFollowS(username):
     followers = fetchUserFollower(user['id'])
     profile_list, follow_list, added_list, stopped_list = dfUpdateAll(profile_list, follow_list, added_list, stopped_list, followers, user['id'], target='follower')
     new_stoped=stopped_list[(pd.to_datetime(stopped_list.date)>startTime) & (stopped_list.iid_followed == user['id'])]
+    new_added=added_list[(pd.to_datetime(added_list.date)>startTime) & (added_list.iid_followed == user['id'])]
 
-    dfSave(profile_list, follow_list, added_list, stopped_list)
+    dfSave(profile_list, follow_list, added_list, stopped_list, tgID)
     browser.close()
     return new_stoping,new_stoped,new_adding, new_added
 
-def getStpFollowS(username):
+def getStpFollowS(tgID, username):
     global browser
-    browser = start(cfg.INSTA_USER,cfg.INSTA_PASS)
-    profile_list, follow_list, added_list, stopped_list = dfLoad()
+    browser = start(tgID)
+    profile_list, follow_list, added_list, stopped_list = dfLoad(tgID)
     profile_list, user = checkIfUsernameExist(profile_list,username)
 
     followers = fetchUserFollowing(user['id'])
@@ -184,34 +182,32 @@ def getStpFollowS(username):
     followers = fetchUserFollower(user['id'])
     profile_list, follow_list, added_list, stopped_list = dfUpdateAll(profile_list, follow_list, added_list, stopped_list, followers, user['id'], target='follower')
     new_stoped=stopped_list[(pd.to_datetime(stopped_list.date)>startTime) & (stopped_list.iid_followed == user['id'])]
-    new_added=added_list[(pd.to_datetime(added_list.date)>startTime) & (added_list.iid_followed == user['id'])]
 
-
-    dfSave(profile_list, follow_list, added_list, stopped_list)
+    dfSave(profile_list, follow_list, added_list, stopped_list,tgID)
     browser.close()
     return new_stoping, new_stoped
 
-def getStpFollowers(username):
+def getStpFollowers(tgID, username):
     global browser
-    browser = start(cfg.INSTA_USER,cfg.INSTA_PASS)
-    profile_list, follow_list, added_list, stopped_list = dfLoad()
+    browser = start(tgID)
+    profile_list, follow_list, added_list, stopped_list = dfLoad(tgID)
     profile_list, user = checkIfUsernameExist(profile_list,username)
     followers = fetchUserFollower(user['id'])
     profile_list, follow_list, added_list, stopped_list = dfUpdateAll(profile_list, follow_list, added_list, stopped_list, followers, user['id'], target='follower')
     new_stoped=stopped_list[(pd.to_datetime(stopped_list.date)>startTime) & (stopped_list.iid_followed == user['id'])]
-    dfSave(profile_list, follow_list, added_list, stopped_list)
+    dfSave(profile_list, follow_list, added_list, stopped_list, tgID)
     browser.close()
     return new_stoped
     
-def getStpFollowings(username):
+def getStpFollowings(tgID, username):
     global browser
-    browser = start(cfg.INSTA_USER,cfg.INSTA_PASS)
-    profile_list, follow_list, added_list, stopped_list = dfLoad()
+    browser = start(tgID)
+    profile_list, follow_list, added_list, stopped_list = dfLoad(tgID)
     profile_list, user = checkIfUsernameExist(profile_list,username)
     followers = fetchUserFollowing(user['id'])
     profile_list, follow_list, added_list, stopped_list = dfUpdateAll(profile_list, follow_list, added_list, stopped_list, followers, user['id'], target='following')
     new_stoping=stopped_list[(pd.to_datetime(stopped_list.date)>startTime) & (stopped_list.iid_following == user['id'])]
-    dfSave(profile_list, follow_list, added_list, stopped_list)
+    dfSave(profile_list, follow_list, added_list, stopped_list, tgID)
     browser.close()
     return new_stoping
 
@@ -222,7 +218,7 @@ if __name__ == '__main__':
     #dfReset()
     #print(len(getNewFollowers("simone_mastella")))
     #dfPrint()
-    a,b,c,d= getALLFollowS("simone_mastella")
+    a,b,c,d= getALLFollowS(str(847459258),"digreluca")
     print(len(a))
     print(len(b))
     print(len(c))
@@ -231,7 +227,7 @@ if __name__ == '__main__':
     
 
     #dfReset()
-    #profile_list, follow_list, added_list, stopped_list = dfLoad()
+    #profile_list, follow_list, added_list, stopped_list = dfLoad(tgID)
     
     #username = 'simone_mastella'
     #print(dfGetProfileByID(profile_list,'10620577766'))
