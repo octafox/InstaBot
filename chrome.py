@@ -30,10 +30,12 @@ def fetchJsonData(browser, url):
     browser.get(url)
     pre = browser.find_element_by_tag_name("pre").text
     jsonData = json.loads(pre)
+    
     return jsonData
     
 
 def start(tg_id, username="",password="",forceLogin=False):
+
     chrome_options = Options()
     chrome_options.add_argument("user-data-dir=tgWS/"+tg_id+"/session")
     browser = webdriver.Chrome(options=chrome_options) 

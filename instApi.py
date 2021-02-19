@@ -7,8 +7,7 @@ from datetime import datetime
 from selenium.webdriver.common.action_chains import ActionChains
 import json
 import pandas as pd
-
-startTime=datetime.now()
+import os
 maxProfile=1000 #n/50 = m requests to find all the profile
 browser = None
 
@@ -107,7 +106,7 @@ def checkIfUsernameExist(profile_list, username):
 
 
 
-def getNewFollowers(tgID, username):
+def getNewFollowers(tgID, username, startTime):
     global browser
     browser = start(tgID)
     profile_list, follow_list, added_list, stopped_list = dfLoad(tgID)
@@ -119,7 +118,7 @@ def getNewFollowers(tgID, username):
     browser.close()
     return new_added
 
-def getNewFollowings(tgID, username):
+def getNewFollowings(tgID, username, startTime):
     global browser
     browser = start(tgID)
     profile_list, follow_list, added_list, stopped_list = dfLoad(tgID)
@@ -131,7 +130,7 @@ def getNewFollowings(tgID, username):
     browser.close()
     return new_adding
 
-def getNewFollowS(tgID, username):
+def getNewFollowS(tgID, username, startTime):
     global browser
     browser = start(tgID)
     profile_list, follow_list, added_list, stopped_list = dfLoad(tgID)
@@ -149,12 +148,15 @@ def getNewFollowS(tgID, username):
     browser.close()
     return new_adding, new_added
 
-def getALLFollowS(tgID, username):
+def getALLFollowS(tgID, username, startTime):
     global browser
     browser = start(tgID)
     profile_list, follow_list, added_list, stopped_list = dfLoad(tgID)
-    profile_list, user = checkIfUsernameExist(profile_list,username)
-
+    try:
+        profile_list, user = checkIfUsernameExist(profile_list,username)
+    except:
+        browser.close()
+        return None, None, None, None
     followers = fetchUserFollowing(user['id'])
     profile_list, follow_list, added_list, stopped_list = dfUpdateAll(profile_list, follow_list, added_list, stopped_list, followers, user['id'], target='following')
     new_stoping=stopped_list[(pd.to_datetime(stopped_list.date)>startTime) & (stopped_list.iid_following == user['id'])]
@@ -169,7 +171,7 @@ def getALLFollowS(tgID, username):
     browser.close()
     return new_stoping,new_stoped,new_adding, new_added
 
-def getStpFollowS(tgID, username):
+def getStpFollowS(tgID, username, startTime):
     global browser
     browser = start(tgID)
     profile_list, follow_list, added_list, stopped_list = dfLoad(tgID)
@@ -187,7 +189,7 @@ def getStpFollowS(tgID, username):
     browser.close()
     return new_stoping, new_stoped
 
-def getStpFollowers(tgID, username):
+def getStpFollowers(tgID, username, startTime):
     global browser
     browser = start(tgID)
     profile_list, follow_list, added_list, stopped_list = dfLoad(tgID)
@@ -199,7 +201,7 @@ def getStpFollowers(tgID, username):
     browser.close()
     return new_stoped
     
-def getStpFollowings(tgID, username):
+def getStpFollowings(tgID, username, startTime):
     global browser
     browser = start(tgID)
     profile_list, follow_list, added_list, stopped_list = dfLoad(tgID)
@@ -211,6 +213,20 @@ def getStpFollowings(tgID, username):
     browser.close()
     return new_stoping
 
+def translateDfToTxt(tgID, df, target="ing"):
+    statsDirPath = os.path.join(os.path.dirname(os.path.realpath(__file__)),"tgWS/"+tgID+"/stats") #cartella dove salvo i dataframe
+    profile_list = pd.read_parquet(os.path.join(statsDirPath,"profile"))
+    resp=""
+    if target == "ed":
+        for elem in df.iid_following:
+            tmp=dfGetProfileByID(profile_list, elem)
+            resp+=tmp['username']+"\n"
+    else:
+        for elem in df.iid_followed:
+            tmp=dfGetProfileByID(profile_list, elem)
+            resp+=tmp['username']+"\n"
+    return resp
+
 
 
 
@@ -218,11 +234,11 @@ if __name__ == '__main__':
     #dfReset()
     #print(len(getNewFollowers("simone_mastella")))
     #dfPrint()
-    a,b,c,d= getALLFollowS(str(847459258),"digreluca")
-    print(len(a))
-    print(len(b))
-    print(len(c))
-    print(len(d))
+    #browser = start(str(847459258),"simone_mastella","PolitoMerda00!", forceLogin=True)
+    #browser.close()
+    new_stoping, new_stoped, new_adding, new_added = getALLFollowS(str(847459258),"simone_mastella",datetime.now())
+    print(translateDfToTxt(str(847459258),new_adding ))
+    
     #dfPrint()
     
 
