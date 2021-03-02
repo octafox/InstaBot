@@ -33,7 +33,7 @@ def help(update, context):
     context.bot.delete_message(chat_id=update.message.from_user.id, message_id=update.message.message_id)
 
 def info(update, context):
-    resp="Questo bot e le tutte librerie sono sviluppate da MAST e XEDOM sotto la community di OctaFox, l'intero progetto è pubblico su github sotto MIT License. Ci trovate su ts.octafox.it o simone@mastella.eu"
+    resp="Questo bot e le tutte librerie sono sviluppate da MAST e XEDOM sotto la community di OctaFox, l'intero progetto verrà pubblicato su github sotto MIT License. Ci trovate su ts.octafox.it o simone@mastella.eu"
     context.bot.send_message(chat_id=update.message.from_user.id, text=resp)
     context.bot.delete_message(chat_id=update.message.from_user.id, message_id=update.message.message_id)
 
